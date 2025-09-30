@@ -542,13 +542,6 @@ export default function App() {
   const deepView = url.searchParams.get("view");
   const deepName = url.searchParams.get("name") || "";
 
-  // load data for current week
-  const currentWeekStart = toISO(weekStart);
-  const uploaded = getUploadedShifts(currentWeekStart);
-  const DATA = uploaded || MOCK_SHIFTS;
-
-  const uploadedNames = getUploadedNames(currentWeekStart);
-
   // state
   const [step, setStep] = useState(
     deepName ? "person" : deepView === "rota" ? "mode" : "home"
@@ -557,6 +550,13 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [weekStart, setWeekStart] = useState(startOfWeekMonday(new Date()));
   const [viewMode, setViewMode] = useState("search"); // "search" or "team"
+
+  // load data for current week
+  const currentWeekStart = toISO(weekStart);
+  const uploaded = getUploadedShifts(currentWeekStart);
+  const DATA = uploaded || MOCK_SHIFTS;
+
+  const uploadedNames = getUploadedNames(currentWeekStart);
 
   // name list (union of saved names + keys in data) and clean/filter
   const names = useMemo(() => {
