@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
+import { fetchRotaData, getWeekData } from "./github-api";
 
 /* ===================== Helpers & constants ===================== */
 
@@ -582,16 +583,36 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [weekStart, setWeekStart] = useState(startOfWeekMonday(new Date()));
   const [viewMode, setViewMode] = useState("search"); // "search" or "team"
+  const [githubData, setGithubData] = useState(null);
+  const [isLoadingGithub, setIsLoadingGithub] = useState(false);
+
+  // Fetch data from GitHub on component mount
+  useEffect(() => {
+    const loadGithubData = async () => {
+      setIsLoadingGithub(true);
+      try {
+        const data = await fetchRotaData();
+        setGithubData(data);
+      } catch (error) {
+        console.error('Error loading GitHub data:', error);
+      } finally {
+        setIsLoadingGithub(false);
+      }
+    };
+    
+    loadGithubData();
+  }, []);
 
   // load data for current week
   const currentWeekStart = toISO(weekStart);
   const uploaded = getUploadedShifts(currentWeekStart);
   
-  // If no data for current week, try to load most recent uploaded data
+  // Try to get data from GitHub first, then local storage, then mock data
+  const githubWeekData = githubData?.weeks?.[currentWeekStart];
   const mostRecentData = uploaded || getMostRecentData();
-  const DATA = mostRecentData || MOCK_SHIFTS;
+  const DATA = githubWeekData?.shifts || mostRecentData || MOCK_SHIFTS;
 
-  const uploadedNames = getUploadedNames(currentWeekStart) || getMostRecentNames();
+  const uploadedNames = githubWeekData?.names || getUploadedNames(currentWeekStart) || getMostRecentNames();
 
   // name list (union of saved names + keys in data) and clean/filter
   const names = useMemo(() => {
@@ -693,7 +714,35 @@ export default function App() {
       {step === "home" && (
         <div>
           <div style={{ marginBottom: "12px", fontWeight: 600, fontSize: "16px" }}>Select from the following</div>
-          {mostRecentData && !uploaded && mostRecentWeekInfo && (
+          {isLoadingGithub && (
+            <div style={{
+              marginBottom: "16px",
+              padding: "12px 16px",
+              background: "#f0f9ff",
+              border: "1px solid #0ea5e9",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#0369a1",
+              textAlign: "center"
+            }}>
+              🔄 Loading data from GitHub...
+            </div>
+          )}
+          {githubWeekData && (
+            <div style={{
+              marginBottom: "16px",
+              padding: "12px 16px",
+              background: "#dcfce7",
+              border: "1px solid #22c55e",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#166534",
+              textAlign: "center"
+            }}>
+              ☁️ Live data from GitHub: {formatDDMMYYYY(currentWeekStart)} - {formatDDMMYYYY(addDays(new Date(currentWeekStart), 6).toISOString().split('T')[0])}
+            </div>
+          )}
+          {mostRecentData && !uploaded && !githubWeekData && mostRecentWeekInfo && (
             <div style={{
               marginBottom: "16px",
               padding: "12px 16px",
