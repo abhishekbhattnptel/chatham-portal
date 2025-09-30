@@ -161,6 +161,15 @@ function ShiftsForDay({ dateISO, entries }) {
     return roleRaw === "requested off" || roleRaw === "requested_off";
   });
 
+  // Check if there are actual shifts with timings (not just off/holiday)
+  const hasActualShifts = list.some(entry => {
+    const roleRaw = (entry.role || "").toLowerCase();
+    const isHoliday = roleRaw === "holiday";
+    const isRDO = roleRaw === "requested off" || roleRaw === "requested_off";
+    const isOff = roleRaw === "off" || roleRaw === "day off" || roleRaw === "day_off" || roleRaw === "day";
+    return !isHoliday && !isRDO && !isOff && entry.start && entry.end;
+  });
+
   // Determine card background color
   let cardStyle = { ...card, marginBottom: 8 };
   if (hasHoliday) {
@@ -169,6 +178,9 @@ function ShiftsForDay({ dateISO, entries }) {
   } else if (hasRequestedOff) {
     cardStyle.background = "#fef3c7"; // Light yellow
     cardStyle.border = "1px solid #f59e0b"; // Slightly darker yellow border
+  } else if (hasActualShifts) {
+    cardStyle.background = "#dcfce7"; // Light green
+    cardStyle.border = "1px solid #22c55e"; // Slightly darker green border
   }
 
   return (
@@ -185,7 +197,7 @@ function ShiftsForDay({ dateISO, entries }) {
         <div style={{ 
           fontWeight: 600, 
           justifySelf: "start",
-          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : "#111"
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
         }}>{dayName}</div>
         
         {/* Center: big date */}
@@ -193,7 +205,7 @@ function ShiftsForDay({ dateISO, entries }) {
           justifySelf: "center", 
           fontSize: 13, 
           fontWeight: 600,
-          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : "#111"
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
         }}>
           {formatDDMMYYYY(dateISO)}
         </div>
@@ -205,7 +217,7 @@ function ShiftsForDay({ dateISO, entries }) {
       {list.length === 0 ? (
         <div style={{ 
           fontSize: 14, 
-          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : "#6b7280", 
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#6b7280", 
           marginTop: 6 
         }}>No shifts</div>
       ) : (
