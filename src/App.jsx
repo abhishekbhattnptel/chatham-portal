@@ -321,7 +321,7 @@ export default function App() {
           alt="Chatham Logo"
           style={{ width: 106, height: 106, marginBottom: 8 }}
         />
-        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham - Portal</div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham - Weekly Rota Portal</div>
         <div style={{ fontSize: 12, color: "#6b7280" }}>Designed and Developed by Abhishek Bhatt</div>
       </div>
 
@@ -356,6 +356,21 @@ export default function App() {
 
       {step === "mode" && (
         <div>
+          {/* Navigation buttons */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <button 
+              style={{ ...btnGhost, fontSize: "12px", padding: "6px 10px" }}
+              onClick={() => setStep("home")}
+            >
+              🏠 Home
+            </button>
+            <button 
+              style={{ ...btnGhost, fontSize: "12px", padding: "6px 10px" }}
+              onClick={() => setStep("home")}
+            >
+              ← Back
+            </button>
+          </div>
           <div style={{ marginBottom: 8, fontWeight: 600 }}>Partner Search Bar</div>
           <div style={{ ...card, marginBottom: 10 }}>
             <input
@@ -403,6 +418,21 @@ export default function App() {
 
       {step === "person" && (
         <div>
+          {/* Navigation buttons */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <button 
+              style={{ ...btnGhost, fontSize: "12px", padding: "6px 10px" }}
+              onClick={() => setStep("home")}
+            >
+              🏠 Home
+            </button>
+            <button 
+              style={{ ...btnGhost, fontSize: "12px", padding: "6px 10px" }}
+              onClick={() => setStep("mode")}
+            >
+              ← Back
+            </button>
+          </div>
           {/* Week nav */}
           <div
             style={{
