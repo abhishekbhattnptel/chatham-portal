@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 /* ===================== Helpers & constants ===================== */
 
 // Day labels Mon–Sun (Monday index = 0)
-const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
 
 const page = {
   maxWidth: 760,
@@ -143,10 +143,11 @@ function Tag({ kind, children }) {
 
 function ShiftsForDay({ dateISO, entries }) {
   const d = new Date(dateISO);
-  const label = `${DAY_NAMES[(d.getDay() + 6) % 7]} ${d.getDate()}/${String(
-    d.getMonth() + 1
-  ).padStart(2, "0")}`;
-
+// Full weekday names (Monday-first)
+const FULL_DAY_NAMES_MON_FIRST = [
+  "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
+];
+const dayName = FULL_DAY_NAMES_MON_FIRST[(d.getDay() + 6) % 7];
   const list = entries || [];
 
   return (
@@ -160,8 +161,8 @@ function ShiftsForDay({ dateISO, entries }) {
   }}
 >
   {/* Left: day label (e.g., Mon 29/09) */}
-  <div style={{ fontWeight: 600, justifySelf: "start" }}>{label}</div>
-
+  <div style={{ fontWeight: 600, justifySelf: "start" }}>{dayName}</div>
+        
   {/* Center: big date */}
   <div style={{ justifySelf: "center", fontSize: 13, fontWeight: 600 }}>
     {formatDDMMYYYY(dateISO)}
