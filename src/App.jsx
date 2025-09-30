@@ -118,6 +118,38 @@ function getAvailableWeeks() {
   }
 }
 
+// Get the most recent uploaded data
+function getMostRecentData() {
+  try {
+    const weeks = getAvailableWeeks();
+    if (weeks.length === 0) return null;
+    
+    // Get the most recent week's data
+    const mostRecentWeek = weeks[0];
+    const weekKey = `uploaded_shifts_${mostRecentWeek.weekStart}_v1`;
+    const raw = localStorage.getItem(weekKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Get the most recent uploaded names
+function getMostRecentNames() {
+  try {
+    const weeks = getAvailableWeeks();
+    if (weeks.length === 0) return null;
+    
+    // Get the most recent week's names
+    const mostRecentWeek = weeks[0];
+    const namesKey = `uploaded_names_${mostRecentWeek.weekStart}_v1`;
+    const raw = localStorage.getItem(namesKey);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 // Clean partner list
 const BAD_NAME_PATTERNS = [
   /opening\s*times?/i,
@@ -554,9 +586,12 @@ export default function App() {
   // load data for current week
   const currentWeekStart = toISO(weekStart);
   const uploaded = getUploadedShifts(currentWeekStart);
-  const DATA = uploaded || MOCK_SHIFTS;
+  
+  // If no data for current week, try to load most recent uploaded data
+  const mostRecentData = uploaded || getMostRecentData();
+  const DATA = mostRecentData || MOCK_SHIFTS;
 
-  const uploadedNames = getUploadedNames(currentWeekStart);
+  const uploadedNames = getUploadedNames(currentWeekStart) || getMostRecentNames();
 
   // name list (union of saved names + keys in data) and clean/filter
   const names = useMemo(() => {
@@ -604,6 +639,12 @@ export default function App() {
     return teamData;
   }, [weekISO, names, DATA]);
 
+  // Get the most recent week info for display
+  const mostRecentWeekInfo = useMemo(() => {
+    const weeks = getAvailableWeeks();
+    return weeks.length > 0 ? weeks[0] : null;
+  }, []);
+
   // share link (optionally with person name)
   function shareLink() {
     const base = `${location.origin}${location.pathname}`;
@@ -640,7 +681,7 @@ export default function App() {
           lineHeight: "1.3",
           marginBottom: "4px",
           padding: "0 8px"
-        }}>Starbucks Chatham - Portal</div>
+        }}>Starbucks Chatham - Weekly Rota Portal</div>
         <div style={{ 
           fontSize: "11px", 
           color: "#6b7280",
@@ -652,6 +693,20 @@ export default function App() {
       {step === "home" && (
         <div>
           <div style={{ marginBottom: "12px", fontWeight: 600, fontSize: "16px" }}>Select from the following</div>
+          {mostRecentData && !uploaded && mostRecentWeekInfo && (
+            <div style={{
+              marginBottom: "16px",
+              padding: "12px 16px",
+              background: "#fef3c7",
+              border: "1px solid #f59e0b",
+              borderRadius: "8px",
+              fontSize: "14px",
+              color: "#92400e",
+              textAlign: "center"
+            }}>
+              📅 Currently showing most recent uploaded data: {formatDDMMYYYY(mostRecentWeekInfo.weekStart)} - {formatDDMMYYYY(mostRecentWeekInfo.weekEnd)}
+            </div>
+          )}
           <div style={card}>
             <div style={{ 
               display: "flex", 
@@ -796,6 +851,19 @@ export default function App() {
           {viewMode === "team" && (
             <>
               <div style={{ marginBottom: 8, fontWeight: 600 }}>Team Weekly Rota</div>
+              {mostRecentData && !uploaded && mostRecentWeekInfo && (
+                <div style={{
+                  marginBottom: "12px",
+                  padding: "8px 12px",
+                  background: "#fef3c7",
+                  border: "1px solid #f59e0b",
+                  borderRadius: "6px",
+                  fontSize: "12px",
+                  color: "#92400e"
+                }}>
+                  📅 Showing most recent uploaded data: {formatDDMMYYYY(mostRecentWeekInfo.weekStart)} - {formatDDMMYYYY(mostRecentWeekInfo.weekEnd)}
+                </div>
+              )}
               {/* Week nav */}
               <div
                 style={{
@@ -909,6 +977,19 @@ export default function App() {
           <div style={{ fontWeight: 700, marginBottom: 8 }}>
             {selectedName ? `${selectedName}'s rota` : "Your rota"} (Mon–Sun)
           </div>
+          {mostRecentData && !uploaded && mostRecentWeekInfo && (
+            <div style={{
+              marginBottom: "12px",
+              padding: "8px 12px",
+              background: "#fef3c7",
+              border: "1px solid #f59e0b",
+              borderRadius: "6px",
+              fontSize: "12px",
+              color: "#92400e"
+            }}>
+              📅 Showing most recent uploaded data: {formatDDMMYYYY(mostRecentWeekInfo.weekStart)} - {formatDDMMYYYY(mostRecentWeekInfo.weekEnd)}
+            </div>
+          )}
 
           {/* Days */}
           {weekISO.map((iso) => {
