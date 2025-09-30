@@ -1,7 +1,15 @@
 import React, { useMemo, useState } from "react";
 
 /** ---------- Mock data (replace later with Google Sheets) ---------- */
-const MOCK_SHIFTS = {
+function getUploadedShifts() {
+  try {
+    const raw = localStorage.getItem("uploaded_shifts_v1");
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}const MOCK_SHIFTS = {
   "Abhishek": {
     "2025-09-29": [{ start: "07:00", end: "15:00", role: "Bar", location: "Front" }],
     "2025-09-30": [{ start: "12:00", end: "20:00", role: "Drive", location: "Window" }],
@@ -18,7 +26,8 @@ const MOCK_SHIFTS = {
     "2025-10-04": [{ start: "09:00", end: "17:00", role: "Bar" }],
   },
 };
-
+const uploaded = getUploadedShifts();
+const DATA = uploaded || MOCK_SHIFTS;
 /** ---------- small date helpers ---------- */
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const toISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -77,11 +86,11 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [weekStart, setWeekStart] = useState(startOfWeekMonday(new Date()));
 
-  const names = useMemo(() => Object.keys(MOCK_SHIFTS).sort(), []);
+  const names = useMemo(() => Object.keys(DATA).sort(), [uploaded]);
   const peopleFiltered = names.filter(n => n.toLowerCase().includes(search.toLowerCase()));
   const weekDates = useMemo(() => Array.from({length:7}, (_,i)=>addDays(weekStart,i)), [weekStart]);
   const weekISO = weekDates.map(toISO);
-  const shiftsForSelected = selectedName ? (MOCK_SHIFTS[selectedName] || {}) : {};
+  const shiftsForSelected = selectedName ? (DATA[selectedName] || {}) : {};
 
   const shareLink = () => {
     const base = `${location.origin}${location.pathname}`;
