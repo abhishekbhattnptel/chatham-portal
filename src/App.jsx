@@ -360,7 +360,7 @@ export default function App() {
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, -7))}>
               ◀ Prev week
             </button>
-            <div style={{ fontSize: 16, color: "#374151", fontweight: 700 }}>
+            <div style={{ fontSize: 14, color: "#374151", fontweight: 700 }}>
               {formatDDMMYYYY(weekISO[0])} – {formatDDMMYYYY(weekISO[6])}
             </div>
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, 7))}>
