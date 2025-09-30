@@ -8,23 +8,32 @@ const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const page = {
   maxWidth: 760,
   margin: "0 auto",
-  padding: "24px 16px",
+  padding: "16px 12px",
   fontFamily:
     "system-ui, -apple-system, Segoe UI, Roboto, Arial, 'Helvetica Neue', sans-serif",
+  minHeight: "100vh",
+  boxSizing: "border-box",
 };
 const card = {
   border: "1px solid #e5e7eb",
-  borderRadius: 14,
-  padding: 14,
+  borderRadius: 12,
+  padding: "12px",
   background: "#fff",
+  marginBottom: "8px",
 };
 const btn = {
-  padding: "8px 12px",
-  borderRadius: 10,
+  padding: "10px 16px",
+  borderRadius: 8,
   border: "1px solid #00704a",
   background: "#00704a",
   color: "#fff",
   cursor: "pointer",
+  fontSize: "14px",
+  fontWeight: "600",
+  minHeight: "44px", // Touch-friendly minimum size
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
 };
 const btnGhost = { ...btn, background: "#fff", color: "#00704a", border: "1px solid #00704a" };
 
@@ -53,20 +62,59 @@ function formatDDMMYYYY(iso) {
 }
 
 // Loaders from admin storage
-function getUploadedShifts() {
+function getUploadedShifts(weekStartISO = null) {
   try {
+    // If specific week requested, try to load that week's data
+    if (weekStartISO) {
+      const weekKey = `uploaded_shifts_${weekStartISO}_v1`;
+      const raw = localStorage.getItem(weekKey);
+      if (raw) return JSON.parse(raw);
+    }
+    
+    // Fallback to current week data
     const raw = localStorage.getItem("uploaded_shifts_v1");
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
-function getUploadedNames() {
+
+function getUploadedNames(weekStartISO = null) {
   try {
+    // If specific week requested, try to load that week's data
+    if (weekStartISO) {
+      const namesKey = `uploaded_names_${weekStartISO}_v1`;
+      const raw = localStorage.getItem(namesKey);
+      if (raw) return JSON.parse(raw);
+    }
+    
+    // Fallback to current week data
     const raw = localStorage.getItem("uploaded_names_v1");
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
+  }
+}
+
+// Get available weeks
+function getAvailableWeeks() {
+  try {
+    const weeks = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('week_metadata_')) {
+        const metadata = JSON.parse(localStorage.getItem(key));
+        weeks.push({
+          weekStart: metadata.weekStart,
+          weekEnd: metadata.weekEnd,
+          uploadDate: metadata.uploadDate,
+          totalShifts: metadata.totalShifts
+        });
+      }
+    }
+    return weeks.sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart));
+  } catch {
+    return [];
   }
 }
 
@@ -209,31 +257,33 @@ function ShiftsForDay({ dateISO, entries }) {
     <div style={cardStyle}>
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
+          display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 4
+          marginBottom: "8px",
+          flexWrap: "wrap",
+          gap: "8px"
         }}
       >
         {/* Left: day label (e.g., Monday) */}
         <div style={{ 
           fontWeight: 600, 
-          justifySelf: "start",
-          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
+          fontSize: "16px",
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111",
+          flex: "1",
+          minWidth: "120px"
         }}>{dayName}</div>
         
-        {/* Center: big date */}
+        {/* Center: date */}
         <div style={{ 
-          justifySelf: "center", 
-          fontSize: 13, 
+          fontSize: "14px", 
           fontWeight: 600,
-          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111",
+          textAlign: "center",
+          minWidth: "100px"
         }}>
           {formatDDMMYYYY(dateISO)}
         </div>
-
-        {/* Right: empty (keeps center truly centered) */}
-        <div />
       </div>
 
       {list.length === 0 ? (
@@ -270,20 +320,53 @@ function ShiftsForDay({ dateISO, entries }) {
 
             const kind = isHoliday ? "holiday" : isRDO ? "rdo" : isOff ? "off" : "default";
 
+            // Check if this is a role change (different role from previous shift)
+            const prevShift = i > 0 ? list[i - 1] : null;
+            const isRoleChange = prevShift && 
+              prevShift.role && s.role && 
+              prevShift.role.toLowerCase() !== s.role.toLowerCase() &&
+              !isHoliday && !isRDO && !isOff &&
+              !prevShift.role.toLowerCase().includes("holiday") &&
+              !prevShift.role.toLowerCase().includes("requested") &&
+              !prevShift.role.toLowerCase().includes("off");
+
             return (
-              <li
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: 14,
-                  padding: "6px 0",
-                }}
-              >
-                <div style={{ fontWeight: 600, minHeight: 18 }}>{leftLabel}</div>
-                <Tag kind={kind}>{rightLabel}</Tag>
-              </li>
+              <React.Fragment key={i}>
+                {isRoleChange && (
+                  <li style={{ padding: "4px 0", borderTop: "1px solid #e5e7eb", marginTop: "4px" }}>
+                    <div style={{ 
+                      fontSize: "10px", 
+                      color: "#6b7280", 
+                      textAlign: "center",
+                      fontWeight: 600,
+                      letterSpacing: "0.5px"
+                    }}>
+                      ROLE CHANGE
+                    </div>
+                  </li>
+                )}
+                <li
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: "14px",
+                    padding: "8px 0",
+                    flexWrap: "wrap",
+                    gap: "8px"
+                  }}
+                >
+                  <div style={{ 
+                    fontWeight: 600, 
+                    minHeight: "20px",
+                    flex: "1",
+                    minWidth: "120px"
+                  }}>{leftLabel}</div>
+                  <div style={{ flexShrink: 0 }}>
+                    <Tag kind={kind}>{rightLabel}</Tag>
+                  </div>
+                </li>
+              </React.Fragment>
             );
           })}
         </ul>
@@ -336,31 +419,33 @@ function TeamRotaDay({ dateISO, shifts }) {
     <div style={cardStyle}>
       <div
         style={{
-          display: "grid",
-          gridTemplateColumns: "1fr auto 1fr",
+          display: "flex",
+          justifyContent: "space-between",
           alignItems: "center",
-          marginBottom: 4
+          marginBottom: "8px",
+          flexWrap: "wrap",
+          gap: "8px"
         }}
       >
         {/* Left: day label */}
         <div style={{ 
           fontWeight: 600, 
-          justifySelf: "start",
-          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
+          fontSize: "16px",
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111",
+          flex: "1",
+          minWidth: "120px"
         }}>{dayName}</div>
         
         {/* Center: date */}
         <div style={{ 
-          justifySelf: "center", 
-          fontSize: 13, 
+          fontSize: "14px", 
           fontWeight: 600,
-          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111",
+          textAlign: "center",
+          minWidth: "100px"
         }}>
           {formatDDMMYYYY(dateISO)}
         </div>
-
-        {/* Right: empty */}
-        <div />
       </div>
 
       {list.length === 0 ? (
@@ -390,23 +475,57 @@ function TeamRotaDay({ dateISO, shifts }) {
 
             const kind = isHoliday ? "holiday" : isRDO ? "rdo" : isOff ? "off" : "default";
 
+            // Check if this is a role change for the same person
+            const prevShift = i > 0 ? list[i - 1] : null;
+            const isRoleChange = prevShift && 
+              prevShift.name === shift.name &&
+              prevShift.role && shift.role && 
+              prevShift.role.toLowerCase() !== shift.role.toLowerCase() &&
+              !isHoliday && !isRDO && !isOff &&
+              !prevShift.role.toLowerCase().includes("holiday") &&
+              !prevShift.role.toLowerCase().includes("requested") &&
+              !prevShift.role.toLowerCase().includes("off");
+
             return (
-              <li
-                key={i}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  fontSize: 14,
-                  padding: "6px 0",
-                }}
-              >
-                <div style={{ fontWeight: 600, minHeight: 18 }}>
-                  <span style={{ color: "#00704a", marginRight: "8px" }}>{shift.name}:</span>
-                  {leftLabel}
-                </div>
-                <Tag kind={kind}>{rightLabel}</Tag>
-              </li>
+              <React.Fragment key={i}>
+                {isRoleChange && (
+                  <li style={{ padding: "4px 0", borderTop: "1px solid #e5e7eb", marginTop: "4px" }}>
+                    <div style={{ 
+                      fontSize: "10px", 
+                      color: "#6b7280", 
+                      textAlign: "center",
+                      fontWeight: 600,
+                      letterSpacing: "0.5px"
+                    }}>
+                      {shift.name.toUpperCase()} - ROLE CHANGE
+                    </div>
+                  </li>
+                )}
+                <li
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    fontSize: "14px",
+                    padding: "8px 0",
+                    flexWrap: "wrap",
+                    gap: "8px"
+                  }}
+                >
+                  <div style={{ 
+                    fontWeight: 600, 
+                    minHeight: "20px",
+                    flex: "1",
+                    minWidth: "150px"
+                  }}>
+                    <span style={{ color: "#00704a", marginRight: "8px" }}>{shift.name}:</span>
+                    {leftLabel}
+                  </div>
+                  <div style={{ flexShrink: 0 }}>
+                    <Tag kind={kind}>{rightLabel}</Tag>
+                  </div>
+                </li>
+              </React.Fragment>
             );
           })}
         </ul>
@@ -423,11 +542,12 @@ export default function App() {
   const deepView = url.searchParams.get("view");
   const deepName = url.searchParams.get("name") || "";
 
-  // load data
-  const uploaded = getUploadedShifts();
+  // load data for current week
+  const currentWeekStart = toISO(weekStart);
+  const uploaded = getUploadedShifts(currentWeekStart);
   const DATA = uploaded || MOCK_SHIFTS;
 
-  const uploadedNames = getUploadedNames();
+  const uploadedNames = getUploadedNames(currentWeekStart);
 
   // state
   const [step, setStep] = useState(
@@ -497,38 +617,76 @@ export default function App() {
   return (
     <div style={page}>
       {/* Header with logo above title (served from /public/chatham-logo.png) */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginBottom: 16 }}>
+      <div style={{ 
+        display: "flex", 
+        flexDirection: "column", 
+        alignItems: "center", 
+        marginBottom: "20px",
+        textAlign: "center"
+      }}>
         <img
           src="/chatham-logo.png"
           alt="Chatham Logo"
-          style={{ width: 106, height: 106, marginBottom: 8 }}
+          style={{ 
+            width: "80px", 
+            height: "80px", 
+            marginBottom: "12px",
+            maxWidth: "100%"
+          }}
         />
-        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham - Weekly Rota Portal</div>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>Designed and Developed by Abhishek Bhatt</div>
+        <div style={{ 
+          fontSize: "18px", 
+          fontWeight: 700,
+          lineHeight: "1.3",
+          marginBottom: "4px",
+          padding: "0 8px"
+        }}>Starbucks Chatham - Weekly Rota Portal</div>
+        <div style={{ 
+          fontSize: "11px", 
+          color: "#6b7280",
+          padding: "0 8px"
+        }}>Designed and Developed by Abhishek Bhatt</div>
       </div>
 
       {/* Steps */}
       {step === "home" && (
         <div>
-          <div style={{ marginBottom: 8, fontWeight: 600 }}>Select from the following</div>
+          <div style={{ marginBottom: "12px", fontWeight: 600, fontSize: "16px" }}>Select from the following</div>
           <div style={card}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>View Rota</div>
-                <div style={{ fontSize: 14, color: "#6b7280" }}>Check your upcoming shifts</div>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "8px"
+            }}>
+              <div style={{ flex: "1", minWidth: "200px" }}>
+                <div style={{ fontWeight: 600, fontSize: "16px", marginBottom: "4px" }}>View Rota</div>
+                <div style={{ fontSize: "14px", color: "#6b7280" }}>Check your upcoming shifts</div>
               </div>
               <button style={btn} onClick={() => setStep("mode")}>
                 Open
               </button>
             </div>
           </div>
-          <div style={{ ...card, marginTop: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <div style={{ fontWeight: 600 }}>Other Options</div>
-                <div style={{ fontSize: 14, color: "#6b7280" }}>Coming Soon</div>
+          <div style={card}>
+            <div style={{ 
+              display: "flex", 
+              justifyContent: "space-between", 
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "8px"
+            }}>
+              <div style={{ flex: "1", minWidth: "200px" }}>
+                <div style={{ fontWeight: 600, fontSize: "16px", marginBottom: "4px" }}>Other Options</div>
+                <div style={{ fontSize: "14px", color: "#6b7280" }}>Coming Soon</div>
               </div>
-              <button style={{ ...btn, background: "#a7c4a0", border: "1px solid #a7c4a0", cursor: "not-allowed" }} disabled>
+              <button style={{ 
+                ...btn, 
+                background: "#a7c4a0", 
+                border: "1px solid #a7c4a0", 
+                cursor: "not-allowed" 
+              }} disabled>
                 Soon
               </button>
             </div>
@@ -555,44 +713,61 @@ export default function App() {
           </div>
 
           {/* Tab Navigation */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+          <div style={{ 
+            display: "flex", 
+            gap: "4px", 
+            marginBottom: "16px",
+            flexWrap: "wrap"
+          }}>
             <button
               style={{
                 ...btnGhost,
-                fontSize: "14px",
-                padding: "8px 16px",
+                fontSize: "13px",
+                padding: "10px 12px",
                 background: viewMode === "search" ? "#00704a" : "#fff",
                 color: viewMode === "search" ? "#fff" : "#00704a",
-                border: "1px solid #00704a"
+                border: "1px solid #00704a",
+                flex: "1",
+                minWidth: "140px"
               }}
               onClick={() => setViewMode("search")}
             >
-              View Individual Rota
+              Individual Rota
             </button>
             <button
               style={{
                 ...btnGhost,
-                fontSize: "14px",
-                padding: "8px 16px",
+                fontSize: "13px",
+                padding: "10px 12px",
                 background: viewMode === "team" ? "#00704a" : "#fff",
                 color: viewMode === "team" ? "#fff" : "#00704a",
-                border: "1px solid #00704a"
+                border: "1px solid #00704a",
+                flex: "1",
+                minWidth: "140px"
               }}
               onClick={() => setViewMode("team")}
             >
-              View Team Rota
+              Team Rota
             </button>
           </div>
 
           {viewMode === "search" && (
             <>
-              <div style={{ marginBottom: 8, fontWeight: 600 }}>Partner Search Bar</div>
-              <div style={{ ...card, marginBottom: 10 }}>
+              <div style={{ marginBottom: "12px", fontWeight: 600, fontSize: "16px" }}>Partner Search Bar</div>
+              <div style={{ ...card, marginBottom: "12px" }}>
                 <input
                   placeholder="Type your name here"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10 }}
+                  style={{ 
+                    width: "100%", 
+                    padding: "12px 16px", 
+                    border: "1px solid #e5e7eb", 
+                    borderRadius: "8px",
+                    fontSize: "16px", // Prevents zoom on iOS
+                    minHeight: "44px",
+                    boxSizing: "border-box"
+                  }}
                 />
               </div>
               <div>
@@ -627,17 +802,36 @@ export default function App() {
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  margin: "8px 0 12px",
+                  margin: "8px 0 16px",
+                  flexWrap: "wrap",
+                  gap: "8px"
                 }}
               >
-                <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, -7))}>
-                  ◀ Prev week
+                <button style={{
+                  ...btnGhost,
+                  fontSize: "12px",
+                  padding: "8px 12px",
+                  minWidth: "80px"
+                }} onClick={() => setWeekStart(addDays(weekStart, -7))}>
+                  ◀ Prev
                 </button>
-                <div style={{ fontSize: 14, color: "#374151", fontWeight: 700 }}>
+                <div style={{ 
+                  fontSize: "13px", 
+                  color: "#374151", 
+                  fontWeight: 700,
+                  textAlign: "center",
+                  flex: "1",
+                  minWidth: "200px"
+                }}>
                   {formatDDMMYYYY(weekISO[0])} – {formatDDMMYYYY(weekISO[6])}
                 </div>
-                <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, 7))}>
-                  Next week ▶
+                <button style={{
+                  ...btnGhost,
+                  fontSize: "12px",
+                  padding: "8px 12px",
+                  minWidth: "80px"
+                }} onClick={() => setWeekStart(addDays(weekStart, 7))}>
+                  Next ▶
                 </button>
               </div>
 
