@@ -702,7 +702,7 @@ export default function App() {
           lineHeight: "1.3",
           marginBottom: "4px",
           padding: "0 8px"
-        }}>Starbucks Chatham - Weekly Rota Portal</div>
+        }}>Starbucks Chatham - Portal</div>
         <div style={{ 
           fontSize: "11px", 
           color: "#6b7280",
