@@ -21,12 +21,12 @@ const card = {
 const btn = {
   padding: "8px 12px",
   borderRadius: 10,
-  border: "1px solid #e5e7eb",
-  background: "#111",
+  border: "1px solid #00704a",
+  background: "#00704a",
   color: "#fff",
   cursor: "pointer",
 };
-const btnGhost = { ...btn, background: "#fff", color: "#111" };
+const btnGhost = { ...btn, background: "#fff", color: "#00704a", border: "1px solid #00704a" };
 
 function addDays(d, n) {
   const x = new Date(d);
@@ -150,8 +150,29 @@ function ShiftsForDay({ dateISO, entries }) {
   const dayName = FULL_DAY_NAMES_MON_FIRST[(d.getDay() + 6) % 7];
   const list = entries || [];
 
+  // Check if any entry is holiday or requested off to determine card color
+  const hasHoliday = list.some(entry => {
+    const roleRaw = (entry.role || "").toLowerCase();
+    return roleRaw === "holiday";
+  });
+  
+  const hasRequestedOff = list.some(entry => {
+    const roleRaw = (entry.role || "").toLowerCase();
+    return roleRaw === "requested off" || roleRaw === "requested_off";
+  });
+
+  // Determine card background color
+  let cardStyle = { ...card, marginBottom: 8 };
+  if (hasHoliday) {
+    cardStyle.background = "#fed7aa"; // Light orange
+    cardStyle.border = "1px solid #fb923c"; // Slightly darker orange border
+  } else if (hasRequestedOff) {
+    cardStyle.background = "#fef3c7"; // Light yellow
+    cardStyle.border = "1px solid #f59e0b"; // Slightly darker yellow border
+  }
+
   return (
-    <div style={{ ...card, marginBottom: 8 }}>
+    <div style={cardStyle}>
       <div
         style={{
           display: "grid",
@@ -161,10 +182,19 @@ function ShiftsForDay({ dateISO, entries }) {
         }}
       >
         {/* Left: day label (e.g., Monday) */}
-        <div style={{ fontWeight: 600, justifySelf: "start" }}>{dayName}</div>
+        <div style={{ 
+          fontWeight: 600, 
+          justifySelf: "start",
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : "#111"
+        }}>{dayName}</div>
         
         {/* Center: big date */}
-        <div style={{ justifySelf: "center", fontSize: 13, fontWeight: 600 }}>
+        <div style={{ 
+          justifySelf: "center", 
+          fontSize: 13, 
+          fontWeight: 600,
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : "#111"
+        }}>
           {formatDDMMYYYY(dateISO)}
         </div>
 
@@ -173,7 +203,11 @@ function ShiftsForDay({ dateISO, entries }) {
       </div>
 
       {list.length === 0 ? (
-        <div style={{ fontSize: 14, color: "#6b7280", marginTop: 6 }}>No shifts</div>
+        <div style={{ 
+          fontSize: 14, 
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : "#6b7280", 
+          marginTop: 6 
+        }}>No shifts</div>
       ) : (
         <ul style={{ margin: 0, padding: "8px 0 0 0", listStyle: "none" }}>
           {list.map((s, i) => {
@@ -306,6 +340,17 @@ export default function App() {
               </button>
             </div>
           </div>
+          <div style={{ ...card, marginTop: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>Other Options</div>
+                <div style={{ fontSize: 14, color: "#6b7280" }}>Coming Soon</div>
+              </div>
+              <button style={{ ...btn, background: "#a7c4a0", border: "1px solid #a7c4a0", cursor: "not-allowed" }} disabled>
+                Soon
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -339,6 +384,19 @@ export default function App() {
             {peopleFiltered.length === 0 && (
               <div style={{ ...card, color: "#6b7280" }}>No matching names</div>
             )}
+          </div>
+          <div style={{ marginTop: 16, textAlign: "center" }}>
+            <button 
+              onClick={shareLink} 
+              style={{ 
+                ...btnGhost, 
+                fontSize: "11px", 
+                padding: "6px 10px",
+                marginTop: "8px"
+              }}
+            >
+              Copy share link
+            </button>
           </div>
         </div>
       )}
@@ -391,8 +449,16 @@ export default function App() {
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 10 }}>
             If something looks off, Please contact <b>ABHISHEK BHATT (Admin)</b>
           </div>
-          <div style={{ marginTop: 8 }}>
-            <button onClick={shareLink} style={btnGhost}>
+          <div style={{ marginTop: 8, textAlign: "center" }}>
+            <button 
+              onClick={shareLink} 
+              style={{ 
+                ...btnGhost, 
+                fontSize: "11px", 
+                padding: "6px 10px",
+                marginTop: "8px"
+              }}
+            >
               Copy share link
             </button>
           </div>
