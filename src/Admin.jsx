@@ -37,22 +37,27 @@ const WEEK_COLS = Object.fromEntries(
   ])
 );
 
+// -------- TIME HELPERS (drop-in) --------
 const trim = (v) => (v == null ? "" : String(v).trim());
+
 function toTimeStr(v) {
+  // Return "" for blanks, zeros, or DAY/OFF text
   if (v == null || v === "") return "";
+  if (v === 0 || v === "0" || v === "00" || v === "00:00") return "";
 
   if (typeof v === "number") {
-    if (v === 0) return "";  // treat 0 as blank
-    // ✅ Convert Excel decimal (e.g. 0.2708333) to HH:MM
-    let totalMinutes = Math.round(v * 24 * 60);  // convert to minutes
-    let hours = Math.floor(totalMinutes / 60);
-    let mins = totalMinutes % 60;
-    return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+    // Excel stores time as fraction of a day (e.g., 0.2708333 = 06:30)
+    const totalMinutes = Math.round(v * 24 * 60);
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h === 0 && m === 0) return "";
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
 
-  const s = String(v).trim();
-  if (!s || s === "0" || s === "00" || s === "00:00") return "";
+  const s = String(v).trim().toUpperCase();
+  if (s === "DAY" || s === "OFF") return "";       // handled by marker logic
 
+  // "6.30" or "6:30"
   if (/^\d+(\.|:)\d{1,2}$/.test(s)) {
     const [hRaw, mRaw] = s.split(/[.:]/);
     const h = String(parseInt(hRaw, 10)).padStart(2, "0");
@@ -60,15 +65,27 @@ function toTimeStr(v) {
     return `${h}:${m}`;
   }
 
-  if (/^\d{1,2}$/.test(s)) return `${String(parseInt(s,10)).padStart(2,"0")}:00`;
+  // "6" -> "06:00"
+  if (/^\d{1,2}$/.test(s)) return `${String(parseInt(s, 10)).padStart(2, "0")}:00`;
 
+  // "6:3" -> "06:03"
   if (/^\d{1,2}:\d{1,2}$/.test(s)) {
     const [h, m] = s.split(":");
-    return `${String(parseInt(h,10)).padStart(2,"0")}:${String(parseInt(m,10)).padStart(2,"0")}`;
+    return `${String(parseInt(h, 10)).padStart(2, "0")}:${String(parseInt(m, 10)).padStart(2, "0")}`;
   }
 
   return "";
 }
+
+function interpretMarker(a, b) {
+  const na = (a === 0 || a === "0" || a === "00:00") ? "" : a;
+  const nb = (b === 0 || b === "0" || b === "00:00") ? "" : b;
+  const t = `${trim(na)} ${trim(nb)}`.toLowerCase();
+  if (/\brdo\b|requested\s*off/.test(t)) return "Requested Off";
+  if (/\bday\s*off\b|\boff\b|\bday\b/.test(t)) return "OFF";
+  return "";
+}
+// ----------------------------------------
 
 function toISODate(v) {
   if (v == null || v === "") return "";
@@ -168,10 +185,10 @@ export default function Admin() {
           if (marker === "OFF" || marker === "Requested Off") {
             tag = marker;
           } } else {
-  start = toTimeStr(rawS);
-  end = toTimeStr(rawE);
+          start = toTimeStr(rawS);
+          end = toTimeStr(rawE);
   // if both blank or one is blank, ignore this cell pair
-  if (!start || !end) continue;
+          if (!start || !end) continue;
 }
           }
 
