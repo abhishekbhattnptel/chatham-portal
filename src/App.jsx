@@ -9,6 +9,11 @@ function getUploadedShifts() {
   } catch {
     return null;
   }
+  function formatDDMMYYYY(iso) {
+  if (!iso || iso.length < 10) return iso || "";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
 }const MOCK_SHIFTS = {
   "Abhishek": {
     "2025-09-29": [{ start: "07:00", end: "15:00", role: "Bar", location: "Front" }],
@@ -58,21 +63,41 @@ function ShiftsForDay({ dateISO, entries }) {
     <div style={{...card, marginBottom: 8}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
         <div style={{fontWeight:600}}>{label}</div>
-        <div style={{fontSize:12,color:"#6b7280"}}>{dateISO}</div>
-      </div>
-      {(!entries || entries.length===0) ? (
-        <div style={{fontSize:14,color:"#6b7280",marginTop:6}}>No shifts</div>
-      ) : (
-        <ul style={{margin:0,padding:"8px 0 0 0",listStyle:"none"}}>
-          {entries.map((s, i) => (
-            <li key={i} style={{display:"flex",justifyContent:"space-between",fontSize:14,padding:"4px 0"}}>
-              <div style={{fontWeight:600}}>{s.start}–{s.end}</div>
-              <div style={{color:"#374151"}}>{s.role || "Shift"}{s.location ? ` · ${s.location}` : ""}</div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+        <div style={{fontSize:12,color:"#6b7280"}}>{formatDDMMYYYY(dateISO)}</div>      </div>
+      {/* Days list */}
+{(entries || []).length === 0 ? (
+  <div style={{fontSize:14,color:"#6b7280",marginTop:6}}>No shifts</div>
+) : (
+  <ul style={{margin:0,padding:"8px 0 0 0",listStyle:"none"}}>
+    {entries.map((s, i) => {
+      const tag = (s.role || "").toLowerCase();
+      const isHoliday = tag === "holiday";
+      const isRDO = tag === "requested off";
+
+      // styles
+      const tagStyle = isHoliday
+        ? { background:"#fee2e2", color:"#991b1b", padding:"0 8px", borderRadius:6, fontWeight:600 }
+        : isRDO
+        ? { background:"#fef3c7", color:"#92400e", padding:"0 8px", borderRadius:6, fontWeight:600 }
+        : { color:"#374151" };
+
+      // label
+      const rightLabel = isHoliday ? "Holiday"
+                        : isRDO   ? "Requested Off"
+                        : (s.role || "Shift");
+
+      // left (time) — hide times if it's a tag-only row
+      const leftLabel = (isHoliday || isRDO) ? "" : (s.start && s.end ? `${s.start}–${s.end}` : "");
+
+      return (
+        <li key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:14,padding:"6px 0"}}>
+          <div style={{fontWeight:600, minHeight:18}}>{leftLabel}</div>
+          <div style={tagStyle}>{rightLabel}</div>
+        </li>
+      );
+    })}
+  </ul>
+)}    </div>
   );
 }
 
