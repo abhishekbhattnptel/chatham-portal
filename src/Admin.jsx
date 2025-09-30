@@ -78,10 +78,13 @@ function toTimeStr(v) {
 }
 
 function interpretMarker(a, b) {
-  const na = (a === 0 || a === "0" || a === "00:00") ? "" : a;
-  const nb = (b === 0 || b === "0" || b === "00:00") ? "" : b;
-  const t = `${trim(na)} ${trim(nb)}`.toLowerCase();
-  if (/\bhol\b|holiday|closed/.test(t)) return "HOLIDAY";
+  const norm = (v) => {
+    if (v === 0 || v === "0" || v === "00" || v === "00:00") return "";
+    return String(v ?? "").trim().toLowerCase();
+  };
+  const t = `${norm(a)} ${norm(b)}`;
+
+  if (/\bhol\b|holiday|closed/.test(t)) return "Holiday";
   if (/\brdo\b|requested\s*off/.test(t)) return "Requested Off";
   if (/\bday\s*off\b|\boff\b|\bday\b/.test(t)) return "OFF";
   return "";
@@ -179,18 +182,24 @@ export default function Admin() {
           const rawS = row[dp.startCol];
           const rawE = row[dp.endCol];
 
-          const marker = interpretMarker(rawS, rawE);
-          let start = "", end = "", tag = "";
+     const marker = interpretMarker(rawS, rawE);
+let start = "", end = "", tag = "";
 
-          if (marker === "OFF" || marker === "Requested Off") {
-            tag = marker;
-          } } else {
-          start = toTimeStr(rawS);
-          end = toTimeStr(rawE);
-  // if both blank or one is blank, ignore this cell pair
-          if (!start || !end) continue;
+if (marker === "OFF") {
+  tag = marker;
+  // completely hide OFF entries
+  
 }
-          }
+
+if (marker === "Holiday" || marker === "Requested Off") {
+  // tag-only entry, no times
+  tag = marker;
+} else {
+  // normal shift: require BOTH start and end
+  start = toTimeStr(rawS);
+  end = toTimeStr(rawE);
+  if (!start || !end) continue;
+}          }
 
           if (!dp.iso) continue;
 
