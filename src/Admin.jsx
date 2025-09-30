@@ -1,6 +1,24 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
 
+// --- name filters shared with viewer ---
+const BAD_NAME_PATTERNS = [
+  /opening\s*times/i,
+  /requested\s*offs?/i,
+  /delivery\s*days?/i,
+  /projected\s*sale/i,
+  /\b(actual|budget|ideal|total|hours?|pay|summary)\b/i
+];
+
+function isRealEmployeeName(n) {
+  if (!n) return false;
+  const name = String(n).trim();
+  if (!name) return false;
+  if (!/[a-z]/i.test(name)) return false;      // must have letters
+  if (BAD_NAME_PATTERNS.some(rx => rx.test(name))) return false;
+  return true;
+}
+
 /** ---- CONFIG FROM YOUR SHEET ---- */
 const DATES_ROW_1BASED = 4; // the row that contains the week dates
 const NAME_COL = "A";
@@ -155,15 +173,20 @@ export default function Admin() {
       for (let r = firstStaff; r < rows.length; r++) {
         const row = rows[r];
         const name = trim(row[NAME_COL_IDX]);
+        // collect names for the picker later
+        const partnerNames = new Set(); // ⬅️ add this Set ABOVE the loop (initialize once)
         const role = trim(row[ROLE_COL_IDX]);
         if (!name) {
           // stop if a few empty rows encountered
           const nextHasData = (rows[r+1]||[]).some(Boolean);
           if (!nextHasData) break;
+          if (isRealEmployeeName(name)) partnerNames.add(name);
           continue;
         }
         // Skip side labels like "Opening Times", etc.
-        if (/opening\s*times|holiday|requested offs?|delivery days?|projected\s*sale/i.test(name)) continue;
+        if (BAD_NAME_PATTERNS.some(rx => rx.test(name))) 
+          continue; 
+        continue;
         
         let pushedAny = false;
 
