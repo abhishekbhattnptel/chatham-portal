@@ -41,23 +41,38 @@ const trim = (v) => (v == null ? "" : String(v).trim());
 
 function toTimeStr(v) {
   if (v == null || v === "") return "";
-  if (typeof v === "number") return XLSX.SSF.format("hh:mm", v);
+
+  // Excel numeric time: 0 -> blank, otherwise format
+  if (typeof v === "number") {
+    if (v === 0) return "";                // treat 0 as blank, not 00:00
+    return XLSX.SSF.format("hh:mm", v);
+  }
+
   const s = String(v).trim();
   if (!s) return "";
+
+  // Treat "0", "00", "00:00" as blank
+  if (s === "0" || s === "00" || s === "00:00") return "";
+
+  // e.g. "6.30" or "6:30"
   if (/^\d+(\.|:)\d{1,2}$/.test(s)) {
     const [hRaw, mRaw] = s.split(/[.:]/);
     const h = String(parseInt(hRaw, 10)).padStart(2, "0");
     const m = String(parseInt(mRaw, 10)).padStart(2, "0");
     return `${h}:${m}`;
   }
+
+  // e.g. "6" -> "06:00"
   if (/^\d{1,2}$/.test(s)) return `${String(parseInt(s, 10)).padStart(2, "0")}:00`;
+
+  // e.g. "6:3" -> "06:03"
   if (/^\d{1,2}:\d{1,2}$/.test(s)) {
     const [h, m] = s.split(":");
     return `${String(parseInt(h,10)).padStart(2,"0")}:${String(parseInt(m,10)).padStart(2,"0")}`;
   }
-  return ""; // unrecognised
-}
 
+  return ""; // unrecognised -> blank
+}
 function toISODate(v) {
   if (v == null || v === "") return "";
   if (typeof v === "number") {
@@ -80,12 +95,13 @@ function toISODate(v) {
 }
 
 function interpretMarker(a, b) {
-  const t = `${trim(a)} ${trim(b)}`.toLowerCase();
+  const na = (a === 0 || a === "0" || a === "00:00") ? "" : a;
+  const nb = (b === 0 || b === "0" || b === "00:00") ? "" : b;
+  const t = `${trim(na)} ${trim(nb)}`.toLowerCase();
   if (/\brdo\b|requested\s*off/.test(t)) return "Requested Off";
   if (/\bday\s*off\b|\boff\b|\bday\b/.test(t)) return "OFF";
   return "";
 }
-
 export default function Admin() {
   const [status, setStatus] = useState("");
   const [detected, setDetected] = useState({ datesISO: [] });
@@ -130,8 +146,8 @@ export default function Admin() {
           continue;
         }
         // Skip side labels like "Opening Times", etc.
-        if (/opening\s*times|holiday|requested offs|delivery days/i.test(name)) continue;
-
+        if (/opening\s*times|holiday|requested offs?|delivery days?|projected\s*sale/i.test(name)) continue;
+        
         let pushedAny = false;
 
         // iterate days in order of COLS
