@@ -1,7 +1,29 @@
 import React, { useMemo, useState } from "react";
 
 /** ---------- Mock data (replace later with Google Sheets) ---------- */
-function getUploadedShifts() {
+const BAD_NAME_PATTERNS = [
+  /opening\s*times/i,
+  /requested\s*offs?/i,
+  /delivery\s*days?/i,
+  /projected\s*sale/i,
+  /\b(actual|budget|ideal|total|hours?|pay|summary)\b/i
+];
+
+function isRealEmployeeName(n) {
+  if (!n) return false;
+  const name = String(n).trim();
+  if (!name) return false;
+  if (!/[a-z]/i.test(name)) return false;      // must include letters
+  if (BAD_NAME_PATTERNS.some(rx => rx.test(name))) return false;
+  return true;
+}
+
+function getUploadedNames() {
+  try {
+    const raw = localStorage.getItem("uploaded_names_v1");
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}function getUploadedShifts() {
   try {
     const raw = localStorage.getItem("uploaded_shifts_v1");
     if (!raw) return null;
@@ -32,6 +54,7 @@ function getUploadedShifts() {
   },
 };
 const uploaded = getUploadedShifts();
+
 const DATA = uploaded || MOCK_SHIFTS;
 /** ---------- small date helpers ---------- */
 const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
