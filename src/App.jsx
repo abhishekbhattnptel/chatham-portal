@@ -152,11 +152,24 @@ function ShiftsForDay({ dateISO, entries }) {
   return (
     <div style={{ ...card, marginBottom: 8 }}>
       <div
-        style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
-      >
-        <div style={{ fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>{formatDDMMYYYY(dateISO)}</div>
-      </div>
+  style={{
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
+    alignItems: "center",
+    marginBottom: 4
+  }}
+>
+  {/* Left: day label (e.g., Mon 29/09) */}
+  <div style={{ fontWeight: 600, justifySelf: "start" }}>{label}</div>
+
+  {/* Center: big date */}
+  <div style={{ justifySelf: "center", fontSize: 13, fontWeight: 600 }}>
+    {formatDDMMYYYY(dateISO)}
+  </div>
+
+  {/* Right: empty (keeps center truly centered) */}
+  <div />
+</div>      </div>
 
       {list.length === 0 ? (
         <div style={{ fontSize: 14, color: "#6b7280", marginTop: 6 }}>No shifts</div>
@@ -271,10 +284,10 @@ export default function App() {
         <img
           src="/chatham-logo.png"
           alt="Chatham Logo"
-          style={{ width: 96, height: 96, marginBottom: 8 }}
+          style={{ width: 106, height: 106, marginBottom: 8 }}
         />
-        <div style={{ fontSize: 22, fontWeight: 700 }}>Chatham Rota</div>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>One link for the whole team</div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham Weekly - Rota</div>
+        <div style={{ fontSize: 12, color: "#6b7280" }}>Designed & Developed by Abhishek Bhatt</div>
         <div style={{ marginTop: 10 }}>
           <button onClick={shareLink} style={btnGhost}>
             Copy share link
@@ -285,7 +298,7 @@ export default function App() {
       {/* Steps */}
       {step === "home" && (
         <div>
-          <div style={{ marginBottom: 8, fontWeight: 600 }}>Choose what you want to view</div>
+          <div style={{ marginBottom: 8, fontWeight: 600 }}>Select from the following</div>
           <div style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
@@ -302,10 +315,10 @@ export default function App() {
 
       {step === "mode" && (
         <div>
-          <div style={{ marginBottom: 8, fontWeight: 600 }}>Who are you?</div>
+          <div style={{ marginBottom: 8, fontWeight: 600 }}>Look for your name?</div>
           <div style={{ ...card, marginBottom: 10 }}>
             <input
-              placeholder="Search your name"
+              placeholder="Search your name here"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10 }}
@@ -348,7 +361,7 @@ export default function App() {
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, -7))}>
               ◀ Prev week
             </button>
-            <div style={{ fontSize: 14, color: "#374151" }}>
+            <div style={{ fontSize: 14, color: "#374151", fontweight: 700 }}>
               {formatDDMMYYYY(weekISO[0])} – {formatDDMMYYYY(weekISO[6])}
             </div>
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, 7))}>
