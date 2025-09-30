@@ -286,8 +286,8 @@ export default function App() {
           alt="Chatham Logo"
           style={{ width: 106, height: 106, marginBottom: 8 }}
         />
-        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham Weekly - Rota</div>
-        <div style={{ fontSize: 12, color: "#6b7280" }}>Designed & Developed by Abhishek Bhatt</div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham Weekly Rota</div>
+        <div style={{ fontSize: 12, color: "#6b7280" }}>Designed and Developed by Abhishek Bhatt</div>
         <div style={{ marginTop: 10 }}>
           <button onClick={shareLink} style={btnGhost}>
             Copy share link
