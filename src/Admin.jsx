@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import * as XLSX from "xlsx";
+import { saveWeekData } from "./github-api";
 
 /** ===== YOUR SHEET LAYOUT (fixed) ===== */
 const DATES_ROW_1BASED = 4;           // row containing week dates
@@ -148,7 +149,7 @@ export default function Admin() {
 
     setStatus("Reading file…");
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       const wb = XLSX.read(reader.result, { type: "array" });
       const sheet = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
@@ -277,8 +278,18 @@ export default function Admin() {
 
       setDetected({ datesISO: dateKeys });
       setPreview(prev);
-      setStatus("Saved! Open the main page and refresh to see the rota.");
-      alert("Rota saved. Open the main page tab and refresh.");
+      setStatus("Saving to GitHub...");
+      
+      // Save to GitHub
+      const githubSuccess = await saveWeekData(dateKeys[0], map, [...partnerNames]);
+      
+      if (githubSuccess) {
+        setStatus("Saved to GitHub! Click 'View App Portal' to see the updated rota.");
+        alert("Rota saved to GitHub successfully! You can now view the app portal.");
+      } else {
+        setStatus("Error saving to GitHub. Data saved locally only.");
+        alert("Warning: Could not save to GitHub. Data saved locally only.");
+      }
     };
     reader.readAsArrayBuffer(file);
   }
@@ -330,9 +341,77 @@ export default function Admin() {
       <input type="file" accept=".xlsx,.xls" onChange={onFile} style={{margin:"12px 0"}} />
       {status && <div style={{margin:"8px 0",color:"#111"}}>{status}</div>}
 
+      {/* App Portal Access Button */}
+      <div style={{margin:"16px 0", textAlign:"center"}}>
+        <button
+          onClick={() => window.location.href = window.location.origin + window.location.pathname}
+          style={{
+            padding:"12px 24px",
+            borderRadius:"8px",
+            border:"1px solid #00704a",
+            background:"#00704a",
+            color:"#fff",
+            cursor:"pointer",
+            fontSize:"16px",
+            fontWeight:"600",
+            minHeight:"44px",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
+            margin:"0 auto",
+            gap:"8px"
+          }}
+        >
+          🏠 View App Portal
+        </button>
+        <div style={{fontSize:"12px", color:"#666", marginTop:"8px"}}>
+          Click to go back to the main rota viewer
+        </div>
+      </div>
+
       {detected.datesISO.length > 0 && (
         <div style={{fontSize:12,color:"#555",margin:"8px 0"}}>
           Detected week (ISO): {detected.datesISO.join(", ")}
+        </div>
+      )}
+
+      {/* Success Message with Portal Button */}
+      {status && status.includes("Saved!") && (
+        <div style={{
+          margin:"16px 0",
+          padding:"16px",
+          background:"#f0f9ff",
+          border:"1px solid #0ea5e9",
+          borderRadius:"8px",
+          textAlign:"center"
+        }}>
+          <div style={{fontSize:"16px", fontWeight:"600", color:"#0369a1", marginBottom:"8px"}}>
+            ✅ Upload Successful!
+          </div>
+          <div style={{fontSize:"14px", color:"#0c4a6e", marginBottom:"12px"}}>
+            Your rota data has been saved. You can now view it in the app portal.
+          </div>
+          <button
+            onClick={() => window.location.href = window.location.origin + window.location.pathname}
+            style={{
+              padding:"12px 24px",
+              borderRadius:"8px",
+              border:"1px solid #00704a",
+              background:"#00704a",
+              color:"#fff",
+              cursor:"pointer",
+              fontSize:"16px",
+              fontWeight:"600",
+              minHeight:"44px",
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"center",
+              margin:"0 auto",
+              gap:"8px"
+            }}
+          >
+            🏠 View App Portal
+          </button>
         </div>
       )}
 
