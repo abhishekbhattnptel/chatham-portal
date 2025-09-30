@@ -289,9 +289,7 @@ export default function App() {
         <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham - Weekly Rota Portal</div>
         <div style={{ fontSize: 12, color: "#6b7280" }}>Designed and Developed by Abhishek Bhatt</div>
         <div style={{ marginTop: 10 }}>
-          <button onClick={shareLink} style={btnGhost}>
-            Copy share link
-          </button>
+          
         </div>
       </div>
 
@@ -395,6 +393,9 @@ export default function App() {
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 10 }}>
             If something looks off, re-upload your Excel via <b>#/admin</b>.
           </div>
+          <button onClick={shareLink} style={btnGhost}>
+            Copy share link
+          </button>
         </div>
       )}
     </div>
