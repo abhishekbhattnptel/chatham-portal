@@ -359,7 +359,7 @@ export default function App() {
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, -7))}>
               ◀ Prev week
             </button>
-            <div style={{ fontSize: 14, color: "#374151", fontweight: 700 }}>
+            <div style={{ fontSize: 16, color: "#374151", fontweight: 700 }}>
               {formatDDMMYYYY(weekISO[0])} – {formatDDMMYYYY(weekISO[6])}
             </div>
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, 7))}>
@@ -391,7 +391,7 @@ export default function App() {
           </div>
 
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 10 }}>
-            If something looks off, re-upload your Excel via <b>#/admin</b>.
+            If something looks off, Please contact <b>ABHISHEK BHATT (Admin)/b>.
           </div>
           <button onClick={shareLink} style={btnGhost}>
             Copy share link
