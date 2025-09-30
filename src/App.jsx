@@ -313,10 +313,10 @@ export default function App() {
 
       {step === "mode" && (
         <div>
-          <div style={{ marginBottom: 8, fontWeight: 600 }}>Look for your name?</div>
+          <div style={{ marginBottom: 8, fontWeight: 600 }}>Partner Search Bar</div>
           <div style={{ ...card, marginBottom: 10 }}>
             <input
-              placeholder="Search your name here"
+              placeholder="Type your name here"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10 }}
