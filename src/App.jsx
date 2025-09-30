@@ -392,13 +392,14 @@ export default function App() {
           </div>
 
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 10 }}>
-            If something looks off, Please contact <b>ABHISHEK BHATT (Admin)/b>.
+            If something looks off, Please contact <b>ABHISHEK BHATT (Admin)/b>
           </div>
-          <button onClick={shareLink} style={btnGhost}>
+          <div>
+          </div><button onClick={shareLink} style={btnGhost}>
             Copy share link
           </button>
         </div>
       )}
     </div>
-  );
+  )}
 }
