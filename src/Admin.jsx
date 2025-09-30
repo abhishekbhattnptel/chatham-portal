@@ -93,6 +93,12 @@ function toISODate(v) {
   return "";
 }
 
+function formatDDMMYYYY(iso) {
+  if (!iso || iso.length < 10) return iso || "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
 function interpretMarker(a, b) {
   const norm = (v) => {
     if (v === 0 || v === "0" || v === "00" || v === "00:00") return "";
@@ -110,6 +116,31 @@ export default function Admin() {
   const [status, setStatus] = useState("");
   const [detected, setDetected] = useState({ datesISO: [] });
   const [preview, setPreview] = useState([]);
+  const [availableWeeks, setAvailableWeeks] = useState([]);
+  const [selectedWeek, setSelectedWeek] = useState("");
+
+  // Load available weeks on component mount
+  React.useEffect(() => {
+    const weeks = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('week_metadata_')) {
+        try {
+          const metadata = JSON.parse(localStorage.getItem(key));
+          weeks.push({
+            weekStart: metadata.weekStart,
+            weekEnd: metadata.weekEnd,
+            uploadDate: metadata.uploadDate,
+            totalShifts: metadata.totalShifts,
+            key: key.replace('week_metadata_', '')
+          });
+        } catch (e) {
+          console.warn('Error parsing week metadata:', e);
+        }
+      }
+    }
+    setAvailableWeeks(weeks.sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart)));
+  }, []);
 
   function onFile(e) {
     const file = e.target.files?.[0];
@@ -166,6 +197,9 @@ export default function Admin() {
         if (!isRealEmployeeName(name)) continue;
         partnerNames.add(name);
 
+        // If no role specified but name exists, use "Shift" as default
+        const currentRole = role || "Shift";
+
         // build day pairs in date order
         const dayPairs = [];
         let di = 0;
@@ -195,27 +229,49 @@ export default function Admin() {
             if (!start || !end) continue; // require both
           }
 
-          map[name] = map[name] || {};
-          map[name][dp.iso] = map[name][dp.iso] || [];
-          map[name][dp.iso].push({
-            start, end,
-            role: tag || role || "Shift",
-            location: undefined
-          });
+          // Only add if there's actual shift data (start/end times or special markers)
+          if (start || end || tag) {
+            map[name] = map[name] || {};
+            map[name][dp.iso] = map[name][dp.iso] || [];
+            map[name][dp.iso].push({
+              start, end,
+              role: tag || currentRole,
+              location: undefined
+            });
+          }
         }
       }
 
-      // Save to localStorage for the viewer
+      // Save to localStorage for the viewer with week-based storage
+      const weekKey = `uploaded_shifts_${dateKeys[0]}_v1`; // Use first date as week identifier
+      const namesKey = `uploaded_names_${dateKeys[0]}_v1`;
+      
+      localStorage.setItem(weekKey, JSON.stringify(map));
+      localStorage.setItem(namesKey, JSON.stringify([...partnerNames]));
+      
+      // Also save as current week for backward compatibility
       localStorage.setItem("uploaded_shifts_v1", JSON.stringify(map));
       localStorage.setItem("uploaded_names_v1", JSON.stringify([...partnerNames]));
+      
+      // Save week metadata
+      const weekMetadata = {
+        weekStart: dateKeys[0],
+        weekEnd: dateKeys[6],
+        uploadDate: new Date().toISOString(),
+        totalShifts: Object.values(map).flat().length
+      };
+      localStorage.setItem(`week_metadata_${dateKeys[0]}`, JSON.stringify(weekMetadata));
 
-      // small preview
+      // small preview - show more detailed info for multiple roles
       const prev = [];
-      const someNames = [...partnerNames].slice(0, 10);
+      const someNames = [...partnerNames].slice(0, 8);
       for (const n of someNames) {
         for (const dISO of dateKeys.slice(0, 2)) {
           const arr = (map[n] && map[n][dISO]) || [];
-          for (const s of arr) prev.push([n, dISO, s.start, s.end, s.role]);
+          for (const s of arr) {
+            const timeInfo = s.start && s.end ? `${s.start}-${s.end}` : s.role;
+            prev.push([n, dISO, timeInfo, s.role]);
+          }
         }
       }
 
@@ -233,8 +289,43 @@ export default function Admin() {
       <h1 style={{fontSize:22,fontWeight:700,marginBottom:8}}>Upload Excel (Sheet 1)</h1>
       <p style={{marginTop:0,color:"#555"}}>
         Fixed to your grid: <b>Name(A) | Role(B) | F/G J/K N/O R/S V/W Z/AA AD/AE</b> for Mon→Sun.<br/>
+        <b>Multiple roles per day:</b> Create separate rows for each role shift (e.g., Jaz as Barista 06:00-10:00, then Jaz as Supervisor 10:00-14:00).<br/>
         <b>OFF/DAY</b> is hidden. Use <b>RDO</b> for Requested Off (yellow tag) and <b>HOL</b>/<b>Holiday</b> for Holiday (red tag).
       </p>
+
+      {/* Week Selector */}
+      {availableWeeks.length > 0 && (
+        <div style={{margin:"16px 0", padding:"12px", background:"#f9fafb", borderRadius:"8px"}}>
+          <h3 style={{fontSize:16,fontWeight:600,margin:"0 0 8px 0"}}>View Historical Data</h3>
+          <p style={{fontSize:12,color:"#666",margin:"0 0 8px 0"}}>
+            Select a week to view previously uploaded rota data:
+          </p>
+          <select 
+            value={selectedWeek} 
+            onChange={(e) => setSelectedWeek(e.target.value)}
+            style={{
+              width:"100%",
+              padding:"8px 12px",
+              border:"1px solid #d1d5db",
+              borderRadius:"6px",
+              fontSize:"14px"
+            }}
+          >
+            <option value="">Select a week...</option>
+            {availableWeeks.map((week) => (
+              <option key={week.key} value={week.key}>
+                {formatDDMMYYYY(week.weekStart)} - {formatDDMMYYYY(week.weekEnd)} 
+                ({week.totalShifts} shifts, uploaded {new Date(week.uploadDate).toLocaleDateString()})
+              </option>
+            ))}
+          </select>
+          {selectedWeek && (
+            <div style={{marginTop:"8px", fontSize:"12px", color:"#666"}}>
+              <strong>Note:</strong> This data is read-only. To modify, upload a new Excel file.
+            </div>
+          )}
+        </div>
+      )}
 
       <input type="file" accept=".xlsx,.xls" onChange={onFile} style={{margin:"12px 0"}} />
       {status && <div style={{margin:"8px 0",color:"#111"}}>{status}</div>}
@@ -254,9 +345,8 @@ export default function Admin() {
                 <tr>
                   <th style={{border:"1px solid #ddd"}}>Name</th>
                   <th style={{border:"1px solid #ddd"}}>Date (ISO)</th>
-                  <th style={{border:"1px solid #ddd"}}>Start</th>
-                  <th style={{border:"1px solid #ddd"}}>End</th>
-                  <th style={{border:"1px solid #ddd"}}>Role/Tag</th>
+                  <th style={{border:"1px solid #ddd"}}>Time/Role</th>
+                  <th style={{border:"1px solid #ddd"}}>Role</th>
                 </tr>
               </thead>
               <tbody>
