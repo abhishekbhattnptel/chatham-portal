@@ -81,11 +81,11 @@ function interpretMarker(a, b) {
   const na = (a === 0 || a === "0" || a === "00:00") ? "" : a;
   const nb = (b === 0 || b === "0" || b === "00:00") ? "" : b;
   const t = `${trim(na)} ${trim(nb)}`.toLowerCase();
+  if (/\bhol\b|holiday|closed/.test(t)) return "HOLIDAY";
   if (/\brdo\b|requested\s*off/.test(t)) return "Requested Off";
   if (/\bday\s*off\b|\boff\b|\bday\b/.test(t)) return "OFF";
   return "";
-}
-// ----------------------------------------
+}// ----------------------------------------
 
 function toISODate(v) {
   if (v == null || v === "") return "";
