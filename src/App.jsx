@@ -169,7 +169,7 @@ function ShiftsForDay({ dateISO, entries }) {
 
   {/* Right: empty (keeps center truly centered) */}
   <div />
-</div>      </div>
+      </div>
 
       {list.length === 0 ? (
         <div style={{ fontSize: 14, color: "#6b7280", marginTop: 6 }}>No shifts</div>
