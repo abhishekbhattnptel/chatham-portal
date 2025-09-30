@@ -98,8 +98,8 @@ function interpretMarker(a, b) {
   const na = (a === 0 || a === "0" || a === "00:00") ? "" : a;
   const nb = (b === 0 || b === "0" || b === "00:00") ? "" : b;
   const t = `${trim(na)} ${trim(nb)}`.toLowerCase();
-  if (/\brdo\b|requested\s*off/.test(t)) return "Requested Off";
-  if (/\bday\s*off\b|\boff\b|\bday\b/.test(t)) return "OFF";
+  if (/\brdo\b|requested\s*off/.test(t)) return "Requested Day Off";
+  if (/\bday\s*off\b|\boff\b|\bday\b/.test(t)) return "DAY OFF";
   return "";
 }
 export default function Admin() {
@@ -170,10 +170,12 @@ export default function Admin() {
 
           if (marker === "OFF" || marker === "Requested Off") {
             tag = marker;
-          } else {
-            start = toTimeStr(rawS);
-            end = toTimeStr(rawE);
-            if (!start && !end) continue; // blank -> ignore
+          } } else {
+  start = toTimeStr(rawS);
+  end = toTimeStr(rawE);
+  // if both blank or one is blank, ignore this cell pair
+  if (!start || !end) continue;
+}
           }
 
           if (!dp.iso) continue;
