@@ -98,6 +98,28 @@ const MOCK_SHIFTS = {
     "2025-09-29": [{ start: "10:00", end: "18:00", role: "Barista" }],
     "2025-10-01": [{ start: "08:00", end: "16:00", role: "Bar" }],
   },
+  Jaz: {
+    "2025-09-29": [
+      { start: "06:00", end: "10:00", role: "Barista" },
+      { start: "10:00", end: "14:00", role: "Supervisor" }
+    ],
+    "2025-09-30": [{ start: "08:00", end: "16:00", role: "Supervisor" }],
+  },
+  Michael: {
+    "2025-10-01": [
+      { start: "07:00", end: "11:00", role: "Barista" },
+      { start: "11:00", end: "15:00", role: "Supervisor" },
+      { start: "15:00", end: "19:00", role: "Barista" }
+    ],
+    "2025-10-02": [{ start: "09:00", end: "17:00", role: "Supervisor" }],
+  },
+  Izzy: {
+    "2025-10-03": [
+      { start: "08:00", end: "12:00", role: "Barista" },
+      { start: "12:00", end: "16:00", role: "Supervisor" }
+    ],
+    "2025-10-04": [{ start: "10:00", end: "18:00", role: "Barista" }],
+  },
   Marco: {
     "2025-10-03": [{ start: "13:00", end: "21:00", role: "Support" }],
   },
@@ -452,6 +474,12 @@ export default function App() {
           });
         });
       });
+      // Sort by name, then by start time for better organization
+      teamData[iso].sort((a, b) => {
+        if (a.name !== b.name) return a.name.localeCompare(b.name);
+        if (a.start && b.start) return a.start.localeCompare(b.start);
+        return 0;
+      });
     });
     return teamData;
   }, [weekISO, names, DATA]);
@@ -689,9 +717,15 @@ export default function App() {
           </div>
 
           {/* Days */}
-          {weekISO.map((iso) => (
-            <ShiftsForDay key={iso} dateISO={iso} entries={shiftsForSelected[iso] || []} />
-          ))}
+          {weekISO.map((iso) => {
+            const dayShifts = shiftsForSelected[iso] || [];
+            // Sort shifts by start time for better organization
+            const sortedShifts = dayShifts.sort((a, b) => {
+              if (a.start && b.start) return a.start.localeCompare(b.start);
+              return 0;
+            });
+            return <ShiftsForDay key={iso} dateISO={iso} entries={sortedShifts} />;
+          })}
 
           {/* Actions */}
           <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
