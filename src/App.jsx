@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 /* ===================== Helpers & constants ===================== */
 
 // Day labels Mon–Sun (Monday index = 0)
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thur", "Fri", "Sat", "Sun"];
+const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const page = {
   maxWidth: 760,
@@ -143,33 +143,33 @@ function Tag({ kind, children }) {
 
 function ShiftsForDay({ dateISO, entries }) {
   const d = new Date(dateISO);
-// Full weekday names (Monday-first)
-const FULL_DAY_NAMES_MON_FIRST = [
-  "Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
-];
-const dayName = FULL_DAY_NAMES_MON_FIRST[(d.getDay() + 6) % 7];
+  // Full weekday names (Monday-first)
+  const FULL_DAY_NAMES_MON_FIRST = [
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+  ];
+  const dayName = FULL_DAY_NAMES_MON_FIRST[(d.getDay() + 6) % 7];
   const list = entries || [];
 
   return (
     <div style={{ ...card, marginBottom: 8 }}>
       <div
-  style={{
-    display: "grid",
-    gridTemplateColumns: "1fr auto 1fr",
-    alignItems: "center",
-    marginBottom: 4
-  }}
->
-  {/* Left: day label (e.g., Mon 29/09) */}
-  <div style={{ fontWeight: 600, justifySelf: "start" }}>{dayName}</div>
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
+          alignItems: "center",
+          marginBottom: 4
+        }}
+      >
+        {/* Left: day label (e.g., Monday) */}
+        <div style={{ fontWeight: 600, justifySelf: "start" }}>{dayName}</div>
         
-  {/* Center: big date */}
-  <div style={{ justifySelf: "center", fontSize: 13, fontWeight: 600 }}>
-    {formatDDMMYYYY(dateISO)}
-  </div>
+        {/* Center: big date */}
+        <div style={{ justifySelf: "center", fontSize: 13, fontWeight: 600 }}>
+          {formatDDMMYYYY(dateISO)}
+        </div>
 
-  {/* Right: empty (keeps center truly centered) */}
-  <div />
+        {/* Right: empty (keeps center truly centered) */}
+        <div />
       </div>
 
       {list.length === 0 ? (
@@ -290,7 +290,9 @@ export default function App() {
         <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham - Weekly Rota Portal</div>
         <div style={{ fontSize: 12, color: "#6b7280" }}>Designed and Developed by Abhishek Bhatt</div>
         <div style={{ marginTop: 10 }}>
-          
+          <button onClick={shareLink} style={btnGhost}>
+            Copy share link
+          </button>
         </div>
       </div>
 
@@ -360,7 +362,7 @@ export default function App() {
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, -7))}>
               ◀ Prev week
             </button>
-            <div style={{ fontSize: 14, color: "#374151", fontweight: 700 }}>
+            <div style={{ fontSize: 14, color: "#374151", fontWeight: 700 }}>
               {formatDDMMYYYY(weekISO[0])} – {formatDDMMYYYY(weekISO[6])}
             </div>
             <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, 7))}>
@@ -392,14 +394,15 @@ export default function App() {
           </div>
 
           <div style={{ fontSize: 12, color: "#6b7280", marginTop: 10 }}>
-            If something looks off, Please contact <b>ABHISHEK BHATT (Admin)/b>
+            If something looks off, Please contact <b>ABHISHEK BHATT (Admin)</b>
           </div>
-          <div>
-          </div><button onClick={shareLink} style={btnGhost}>
-            Copy share link
-          </button>
+          <div style={{ marginTop: 8 }}>
+            <button onClick={shareLink} style={btnGhost}>
+              Copy share link
+            </button>
+          </div>
         </div>
       )}
     </div>
-  )}
+  );
 }
