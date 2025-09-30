@@ -286,7 +286,7 @@ export default function App() {
           alt="Chatham Logo"
           style={{ width: 106, height: 106, marginBottom: 8 }}
         />
-        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham Weekly Rota</div>
+        <div style={{ fontSize: 22, fontWeight: 700 }}>Starbucks Chatham - Weekly Rota Portal</div>
         <div style={{ fontSize: 12, color: "#6b7280" }}>Designed and Developed by Abhishek Bhatt</div>
         <div style={{ marginTop: 10 }}>
           <button onClick={shareLink} style={btnGhost}>
@@ -302,8 +302,8 @@ export default function App() {
           <div style={card}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
-                <div style={{ fontWeight: 600 }}>Rota</div>
-                <div style={{ fontSize: 14, color: "#6b7280" }}>See your assigned shifts</div>
+                <div style={{ fontWeight: 600 }}>View Rota</div>
+                <div style={{ fontSize: 14, color: "#6b7280" }}>Check your upcoming shifts</div>
               </div>
               <button style={btn} onClick={() => setStep("mode")}>
                 Open
