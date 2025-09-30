@@ -270,6 +270,129 @@ function ShiftsForDay({ dateISO, entries }) {
   );
 }
 
+function TeamRotaDay({ dateISO, shifts }) {
+  const d = new Date(dateISO);
+  const FULL_DAY_NAMES_MON_FIRST = [
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
+  ];
+  const dayName = FULL_DAY_NAMES_MON_FIRST[(d.getDay() + 6) % 7];
+  const list = shifts || [];
+
+  // Check for special day types
+  const hasHoliday = list.some(entry => {
+    const roleRaw = (entry.role || "").toLowerCase();
+    return roleRaw === "holiday";
+  });
+  
+  const hasRequestedOff = list.some(entry => {
+    const roleRaw = (entry.role || "").toLowerCase();
+    return roleRaw === "requested off" || roleRaw === "requested_off";
+  });
+
+  const hasActualShifts = list.some(entry => {
+    const roleRaw = (entry.role || "").toLowerCase();
+    const isHoliday = roleRaw === "holiday";
+    const isRDO = roleRaw === "requested off" || roleRaw === "requested_off";
+    const isOff = roleRaw === "off" || roleRaw === "day off" || roleRaw === "day_off" || roleRaw === "day";
+    return !isHoliday && !isRDO && !isOff && entry.start && entry.end;
+  });
+
+  // Determine card background color
+  let cardStyle = { ...card, marginBottom: 8 };
+  if (hasHoliday) {
+    cardStyle.background = "#fed7aa"; // Light orange
+    cardStyle.border = "1px solid #fb923c";
+  } else if (hasRequestedOff) {
+    cardStyle.background = "#fef3c7"; // Light yellow
+    cardStyle.border = "1px solid #f59e0b";
+  } else if (hasActualShifts) {
+    cardStyle.background = "#dcfce7"; // Light green
+    cardStyle.border = "1px solid #22c55e";
+  }
+
+  return (
+    <div style={cardStyle}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr auto 1fr",
+          alignItems: "center",
+          marginBottom: 4
+        }}
+      >
+        {/* Left: day label */}
+        <div style={{ 
+          fontWeight: 600, 
+          justifySelf: "start",
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
+        }}>{dayName}</div>
+        
+        {/* Center: date */}
+        <div style={{ 
+          justifySelf: "center", 
+          fontSize: 13, 
+          fontWeight: 600,
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#111"
+        }}>
+          {formatDDMMYYYY(dateISO)}
+        </div>
+
+        {/* Right: empty */}
+        <div />
+      </div>
+
+      {list.length === 0 ? (
+        <div style={{ 
+          fontSize: 14, 
+          color: hasHoliday ? "#92400e" : hasRequestedOff ? "#92400e" : hasActualShifts ? "#166534" : "#6b7280", 
+          marginTop: 6 
+        }}>No shifts scheduled</div>
+      ) : (
+        <ul style={{ margin: 0, padding: "8px 0 0 0", listStyle: "none" }}>
+          {list.map((shift, i) => {
+            const roleRaw = (shift.role || "").toLowerCase();
+            const isHoliday = roleRaw === "holiday";
+            const isRDO = roleRaw === "requested off" || roleRaw === "requested_off";
+            const isOff = roleRaw === "off" || roleRaw === "day off" || roleRaw === "day_off" || roleRaw === "day";
+
+            const rightLabel = isHoliday
+              ? "Holiday"
+              : isRDO
+              ? "Requested Off"
+              : isOff
+              ? "OFF"
+              : shift.role || "Shift";
+
+            const showTimes = !isHoliday && !isRDO && !isOff;
+            const leftLabel = showTimes && shift.start && shift.end ? `${shift.start}–${shift.end}` : "";
+
+            const kind = isHoliday ? "holiday" : isRDO ? "rdo" : isOff ? "off" : "default";
+
+            return (
+              <li
+                key={i}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  fontSize: 14,
+                  padding: "6px 0",
+                }}
+              >
+                <div style={{ fontWeight: 600, minHeight: 18 }}>
+                  <span style={{ color: "#00704a", marginRight: "8px" }}>{shift.name}:</span>
+                  {leftLabel}
+                </div>
+                <Tag kind={kind}>{rightLabel}</Tag>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /* ===================== Main App ===================== */
 
 export default function App() {
@@ -291,6 +414,7 @@ export default function App() {
   const [selectedName, setSelectedName] = useState(deepName);
   const [search, setSearch] = useState("");
   const [weekStart, setWeekStart] = useState(startOfWeekMonday(new Date()));
+  const [viewMode, setViewMode] = useState("search"); // "search" or "team"
 
   // name list (union of saved names + keys in data) and clean/filter
   const names = useMemo(() => {
@@ -313,6 +437,24 @@ export default function App() {
   const peopleFiltered = names.filter((n) =>
     n.toLowerCase().includes(search.toLowerCase())
   );
+
+  // team rota data - organize all shifts by day
+  const teamRotaByDay = useMemo(() => {
+    const teamData = {};
+    weekISO.forEach(iso => {
+      teamData[iso] = [];
+      names.forEach(name => {
+        const personShifts = DATA[name]?.[iso] || [];
+        personShifts.forEach(shift => {
+          teamData[iso].push({
+            name,
+            ...shift
+          });
+        });
+      });
+    });
+    return teamData;
+  }, [weekISO, names, DATA]);
 
   // share link (optionally with person name)
   function shareLink() {
@@ -383,35 +525,111 @@ export default function App() {
               ← Back
             </button>
           </div>
-          <div style={{ marginBottom: 8, fontWeight: 600 }}>Partner Search Bar</div>
-          <div style={{ ...card, marginBottom: 10 }}>
-            <input
-              placeholder="Type your name here"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10 }}
-            />
+
+          {/* Tab Navigation */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+            <button
+              style={{
+                ...btnGhost,
+                fontSize: "14px",
+                padding: "8px 16px",
+                background: viewMode === "search" ? "#00704a" : "#fff",
+                color: viewMode === "search" ? "#fff" : "#00704a",
+                border: "1px solid #00704a"
+              }}
+              onClick={() => setViewMode("search")}
+            >
+              View Individual Rota
+            </button>
+            <button
+              style={{
+                ...btnGhost,
+                fontSize: "14px",
+                padding: "8px 16px",
+                background: viewMode === "team" ? "#00704a" : "#fff",
+                color: viewMode === "team" ? "#fff" : "#00704a",
+                border: "1px solid #00704a"
+              }}
+              onClick={() => setViewMode("team")}
+            >
+              View Team Rota
+            </button>
           </div>
-          <div>
-            {peopleFiltered.map((name) => (
+
+          {viewMode === "search" && (
+            <>
+              <div style={{ marginBottom: 8, fontWeight: 600 }}>Partner Search Bar</div>
+              <div style={{ ...card, marginBottom: 10 }}>
+                <input
+                  placeholder="Type your name here"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10 }}
+                />
+              </div>
+              <div>
+                {peopleFiltered.map((name) => (
+                  <div
+                    key={name}
+                    style={{ ...card, marginBottom: 8, cursor: "pointer" }}
+                    onClick={() => {
+                      setSelectedName(name);
+                      setStep("person");
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div style={{ fontWeight: 600 }}>{name}</div>
+                      <span>›</span>
+                    </div>
+                  </div>
+                ))}
+                {peopleFiltered.length === 0 && (
+                  <div style={{ ...card, color: "#6b7280" }}>No matching names</div>
+                )}
+              </div>
+            </>
+          )}
+
+          {viewMode === "team" && (
+            <>
+              <div style={{ marginBottom: 8, fontWeight: 600 }}>Team Weekly Rota</div>
+              {/* Week nav */}
               <div
-                key={name}
-                style={{ ...card, marginBottom: 8, cursor: "pointer" }}
-                onClick={() => {
-                  setSelectedName(name);
-                  setStep("person");
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  margin: "8px 0 12px",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <div style={{ fontWeight: 600 }}>{name}</div>
-                  <span>›</span>
+                <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, -7))}>
+                  ◀ Prev week
+                </button>
+                <div style={{ fontSize: 14, color: "#374151", fontWeight: 700 }}>
+                  {formatDDMMYYYY(weekISO[0])} – {formatDDMMYYYY(weekISO[6])}
                 </div>
+                <button style={btnGhost} onClick={() => setWeekStart(addDays(weekStart, 7))}>
+                  Next week ▶
+                </button>
               </div>
-            ))}
-            {peopleFiltered.length === 0 && (
-              <div style={{ ...card, color: "#6b7280" }}>No matching names</div>
-            )}
-          </div>
+
+              {/* Team Days */}
+              {weekISO.map((iso) => (
+                <TeamRotaDay key={iso} dateISO={iso} shifts={teamRotaByDay[iso] || []} />
+              ))}
+
+              {/* Actions */}
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button
+                  style={btnGhost}
+                  onClick={() => setWeekStart(startOfWeekMonday(new Date()))}
+                >
+                  This week
+                </button>
+              </div>
+            </>
+          )}
+
           <div style={{ marginTop: 16, textAlign: "center" }}>
             <button 
               onClick={shareLink} 
