@@ -38,23 +38,21 @@ const WEEK_COLS = Object.fromEntries(
 );
 
 const trim = (v) => (v == null ? "" : String(v).trim());
-
 function toTimeStr(v) {
   if (v == null || v === "") return "";
 
-  // Excel numeric time: 0 -> blank, otherwise format
   if (typeof v === "number") {
-    if (v === 0) return "";                // treat 0 as blank, not 00:00
-    return XLSX.SSF.format("hh:mm", v);
+    if (v === 0) return "";  // treat 0 as blank
+    // ✅ Convert Excel decimal (e.g. 0.2708333) to HH:MM
+    let totalMinutes = Math.round(v * 24 * 60);  // convert to minutes
+    let hours = Math.floor(totalMinutes / 60);
+    let mins = totalMinutes % 60;
+    return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
   }
 
   const s = String(v).trim();
-  if (!s) return "";
+  if (!s || s === "0" || s === "00" || s === "00:00") return "";
 
-  // Treat "0", "00", "00:00" as blank
-  if (s === "0" || s === "00" || s === "00:00") return "";
-
-  // e.g. "6.30" or "6:30"
   if (/^\d+(\.|:)\d{1,2}$/.test(s)) {
     const [hRaw, mRaw] = s.split(/[.:]/);
     const h = String(parseInt(hRaw, 10)).padStart(2, "0");
@@ -62,17 +60,16 @@ function toTimeStr(v) {
     return `${h}:${m}`;
   }
 
-  // e.g. "6" -> "06:00"
-  if (/^\d{1,2}$/.test(s)) return `${String(parseInt(s, 10)).padStart(2, "0")}:00`;
+  if (/^\d{1,2}$/.test(s)) return `${String(parseInt(s,10)).padStart(2,"0")}:00`;
 
-  // e.g. "6:3" -> "06:03"
   if (/^\d{1,2}:\d{1,2}$/.test(s)) {
     const [h, m] = s.split(":");
     return `${String(parseInt(h,10)).padStart(2,"0")}:${String(parseInt(m,10)).padStart(2,"0")}`;
   }
 
-  return ""; // unrecognised -> blank
+  return "";
 }
+
 function toISODate(v) {
   if (v == null || v === "") return "";
   if (typeof v === "number") {
