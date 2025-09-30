@@ -3,7 +3,7 @@ import React, { useMemo, useState } from "react";
 /* ===================== Helpers & constants ===================== */
 
 // Day labels Mon–Sun (Monday index = 0)
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
 const page = {
   maxWidth: 760,
